@@ -29,7 +29,7 @@ local strokeBtn = Instance.new("UIStroke", openBtn)
 strokeBtn.Color = Color3.fromRGB(150,150,150)
 strokeBtn.Thickness = 2
 
--- 🧱 PAINEL PRINCIPAL (TAMANHO REDUZIDO)
+-- 🧱 PAINEL PRINCIPAL
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.new(0,280,0,450)
 frame.Position = UDim2.new(0.5,-140,0.5,-225)
@@ -103,7 +103,7 @@ local creditsContainer = Instance.new("ScrollingFrame", frame)
 creditsContainer.Size = UDim2.new(1,0,1,-75)
 creditsContainer.Position = UDim2.new(0,0,0,65)
 creditsContainer.BackgroundTransparency = 1
-creditsContainer.CanvasSize = UDim2.new(0,0,0,400)
+creditsContainer.CanvasSize = UDim2.new(0,0,0,420)
 creditsContainer.ScrollBarThickness = 6
 creditsContainer.BorderSizePixel = 0
 creditsContainer.Visible = false
@@ -258,28 +258,12 @@ local getSpeedValue = criarSlider("Velocidade", 330, 16, 120, 50)
 local function openDiscord()
 	local discordLink = "https://discord.gg/bBWPETWW"
 	
-	-- Tenta diferentes métodos para abrir o link
-	local success, err = pcall(function()
-		-- Método 1: Usar setclipboard e alerta
+	pcall(function()
 		if setclipboard then
 			setclipboard(discordLink)
 		end
-		
-		-- Método 2: Tentar abrir no navegador (para executores que suportam)
-		if syn and syn.request then
-			syn.request({
-				Url = discordLink,
-				Method = "GET"
-			})
-		end
-		
-		-- Método 3: Usar o comando de abrir URL se disponível
-		if game:GetService("UrlService") then
-			game:GetService("UrlService"):OpenUrl(discordLink)
-		end
 	end)
 	
-	-- Mostra notificação
 	local notification = Instance.new("TextLabel", frame)
 	notification.Size = UDim2.new(0,200,0,40)
 	notification.Position = UDim2.new(0.5,-100,0.5,-20)
@@ -326,7 +310,6 @@ local function criarCreditos()
 		descLabel.TextXAlignment = Enum.TextXAlignment.Left
 	end
 	
-	-- Título da aba
 	local titleCred = Instance.new("TextLabel", creditsContainer)
 	titleCred.Size = UDim2.new(1,0,0,30)
 	titleCred.Position = UDim2.new(0,10,0,5)
@@ -337,11 +320,9 @@ local function criarCreditos()
 	titleCred.BackgroundTransparency = 1
 	titleCred.TextXAlignment = Enum.TextXAlignment.Left
 	
-	-- Cards dos criadores
 	criarCard("⭐ ZZZ", "Desenvolvedor Principal | Criador do Projeto", Color3.fromRGB(80,50,50), 40)
 	criarCard("⚡ mathyas", "Co-Desenvolvedor | Programador", Color3.fromRGB(50,50,80), 115)
 	
-	-- Discord Card (CLICÁVEL)
 	local discordCard = Instance.new("TextButton", creditsContainer)
 	discordCard.Size = UDim2.new(1,-20,0,80)
 	discordCard.Position = UDim2.new(0,10,0,190)
@@ -349,7 +330,6 @@ local function criarCreditos()
 	discordCard.Text = ""
 	Instance.new("UICorner", discordCard).CornerRadius = UDim.new(0,10)
 	
-	-- Efeito hover
 	discordCard.MouseEnter:Connect(function()
 		discordCard.BackgroundColor3 = Color3.fromRGB(114,137,218)
 	end)
@@ -358,7 +338,6 @@ local function criarCreditos()
 		discordCard.BackgroundColor3 = Color3.fromRGB(88,101,242)
 	end)
 	
-	-- Clique para abrir Discord
 	discordCard.MouseButton1Click:Connect(function()
 		openDiscord()
 	end)
@@ -402,7 +381,6 @@ local function criarCreditos()
 	clickText.BackgroundTransparency = 1
 	clickText.TextTransparency = 0.5
 	
-	-- Versão
 	local versionFrame = Instance.new("Frame", creditsContainer)
 	versionFrame.Size = UDim2.new(1,-20,0,45)
 	versionFrame.Position = UDim2.new(0,10,0,280)
@@ -417,7 +395,6 @@ local function criarCreditos()
 	versionText.TextSize = 10
 	versionText.BackgroundTransparency = 1
 	
-	-- Agradecimento
 	local thanksFrame = Instance.new("Frame", creditsContainer)
 	thanksFrame.Size = UDim2.new(1,-20,0,45)
 	thanksFrame.Position = UDim2.new(0,10,0,335)
@@ -433,7 +410,6 @@ local function criarCreditos()
 	thanksText.BackgroundTransparency = 1
 end
 
--- Criar créditos
 criarCreditos()
 
 -- Controle das abas
@@ -451,7 +427,6 @@ creditsTabBtn.MouseButton1Click:Connect(function()
 	creditsContainer.Visible = true
 end)
 
--- ABRIR / FECHAR
 openBtn.MouseButton1Click:Connect(function()
 	frame.Visible = not frame.Visible
 end)
@@ -565,19 +540,32 @@ player.CharacterAdded:Connect(function(character)
 	end
 end)
 
--- SPEED
-RunService.RenderStepped:Connect(function()
-	if player.Character then
-		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-		if humanoid then
-			if getSpeedToggle() then
-				local desiredSpeed = getSpeedValue()
-				if humanoid.WalkSpeed ~= desiredSpeed then
-					humanoid.WalkSpeed = desiredSpeed
-				end
-			else
-				if humanoid.WalkSpeed ~= 16 then
-					humanoid.WalkSpeed = 16
+-- SPEED CORRIGIDO (DEFINITIVO)
+local lastSpeedValue = 16
+local speedEnabled = false
+
+-- Loop dedicado para velocidade
+spawn(function()
+	while true do
+		task.wait(0.1) -- Verifica a cada 0.1 segundos
+		if player.Character then
+			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
+				local currentState = getSpeedToggle()
+				local currentSpeedValue = getSpeedValue()
+				
+				if currentState then
+					-- Speed ativado
+					if humanoid.WalkSpeed ~= currentSpeedValue then
+						humanoid.WalkSpeed = currentSpeedValue
+						lastSpeedValue = currentSpeedValue
+					end
+				else
+					-- Speed desativado
+					if humanoid.WalkSpeed ~= 16 then
+						humanoid.WalkSpeed = 16
+						lastSpeedValue = 16
+					end
 				end
 			end
 		end
@@ -608,19 +596,95 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- SUPER JUMP
-RunService.RenderStepped:Connect(function()
-	if getJump() and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-		if humanoid.JumpPower ~= 120 then
-			humanoid.JumpPower = 120
+-- SUPER JUMP CORRIGIDO (Pulo múltiplo)
+local superJumpActive = false
+local lastJumpTime = 0
+
+-- Função para permitir pulo múltiplo
+local function setupSuperJump(character)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		-- Aumenta o JumpPower
+		humanoid.JumpPower = 120
+		
+		-- Remove a limitação de pulo no ar
+		local function onJumpRequest()
+			if superJumpActive then
+				-- Permite pular novamente mesmo no ar
+				humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+			end
 		end
-	else
-		if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+		
+		-- Conecta no pulo
+		local jumpConnection
+		jumpConnection = humanoid:GetPropertyChangedSignal("Jump"):Connect(function()
+			if superJumpActive and humanoid.Jump and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
+				task.wait(0.05)
+				if superJumpActive then
+					humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+				end
+			end
+		end)
+		
+		return jumpConnection
+	end
+end
+
+-- Monitora o Super Jump
+local superJumpConnection = nil
+
+RunService.RenderStepped:Connect(function()
+	local newState = getJump()
+	
+	if newState ~= superJumpActive then
+		superJumpActive = newState
+		
+		if superJumpActive and player.Character then
 			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-			if humanoid.JumpPower ~= 50 then
+			if humanoid then
+				humanoid.JumpPower = 120
+			end
+		elseif not superJumpActive and player.Character then
+			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
 				humanoid.JumpPower = 50
 			end
+		end
+	end
+	
+	-- Mantém o JumpPower enquanto ativo
+	if superJumpActive and player.Character then
+		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid and humanoid.JumpPower ~= 120 then
+			humanoid.JumpPower = 120
+		end
+	end
+end)
+
+-- Conexão para pulo múltiplo no espaço
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	
+	if superJumpActive and input.KeyCode == Enum.KeyCode.Space then
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			-- Permite pular no ar
+			local currentTime = tick()
+			if currentTime - lastJumpTime > 0.1 then -- Pequeno cooldown
+				lastJumpTime = currentTime
+				humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+			end
+		end
+	end
+end)
+
+-- Quando o personagem renascer, aplica o super jump novamente
+player.CharacterAdded:Connect(function(character)
+	task.wait(0.5)
+	if superJumpActive then
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			humanoid.JumpPower = 120
 		end
 	end
 end)
