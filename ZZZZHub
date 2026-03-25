@@ -1,6 +1,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 
@@ -28,10 +29,10 @@ local strokeBtn = Instance.new("UIStroke", openBtn)
 strokeBtn.Color = Color3.fromRGB(150,150,150)
 strokeBtn.Thickness = 2
 
--- 🧱 PAINEL
+-- 🧱 PAINEL PRINCIPAL
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0,300,0,580)
-frame.Position = UDim2.new(0.5,-150,0.5,-290)
+frame.Size = UDim2.new(0,320,0,500)
+frame.Position = UDim2.new(0.5,-160,0.5,-250)
 frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
 frame.Visible = false
 frame.Active = true
@@ -61,9 +62,53 @@ close.Text = "X"
 close.BackgroundTransparency = 1
 close.TextColor3 = Color3.new(1,1,1)
 
+-- Botões de Abas
+local tabButtons = Instance.new("Frame", frame)
+tabButtons.Size = UDim2.new(1,0,0,35)
+tabButtons.Position = UDim2.new(0,0,0,35)
+tabButtons.BackgroundTransparency = 1
+
+local mainTabBtn = Instance.new("TextButton", tabButtons)
+mainTabBtn.Size = UDim2.new(0.5,-1,1,0)
+mainTabBtn.Position = UDim2.new(0,0,0,0)
+mainTabBtn.Text = "⚙️ FUNÇÕES"
+mainTabBtn.Font = Enum.Font.GothamBold
+mainTabBtn.TextColor3 = Color3.new(1,1,1)
+mainTabBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+mainTabBtn.BorderSizePixel = 0
+Instance.new("UICorner", mainTabBtn).CornerRadius = UDim.new(0,8)
+
+local creditsTabBtn = Instance.new("TextButton", tabButtons)
+creditsTabBtn.Size = UDim2.new(0.5,-1,1,0)
+creditsTabBtn.Position = UDim2.new(0.5,1,0,0)
+creditsTabBtn.Text = "👥 CRÉDITOS"
+creditsTabBtn.Font = Enum.Font.GothamBold
+creditsTabBtn.TextColor3 = Color3.new(1,1,1)
+creditsTabBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+creditsTabBtn.BorderSizePixel = 0
+Instance.new("UICorner", creditsTabBtn).CornerRadius = UDim.new(0,8)
+
+-- Container para as abas
+local mainContainer = Instance.new("ScrollingFrame", frame)
+mainContainer.Size = UDim2.new(1,0,1,-70)
+mainContainer.Position = UDim2.new(0,0,0,70)
+mainContainer.BackgroundTransparency = 1
+mainContainer.CanvasSize = UDim2.new(0,0,0,550)
+mainContainer.ScrollBarThickness = 8
+mainContainer.BorderSizePixel = 0
+
+local creditsContainer = Instance.new("ScrollingFrame", frame)
+creditsContainer.Size = UDim2.new(1,0,1,-70)
+creditsContainer.Position = UDim2.new(0,0,0,70)
+creditsContainer.BackgroundTransparency = 1
+creditsContainer.CanvasSize = UDim2.new(0,0,0,400)
+creditsContainer.ScrollBarThickness = 8
+creditsContainer.BorderSizePixel = 0
+creditsContainer.Visible = false
+
 -- 🔘 TOGGLE
 local function criarToggle(nome, posY)
-	local bg = Instance.new("Frame", frame)
+	local bg = Instance.new("Frame", mainContainer)
 	bg.Size = UDim2.new(1,-20,0,40)
 	bg.Position = UDim2.new(0,10,0,posY)
 	bg.BackgroundColor3 = Color3.fromRGB(40,40,40)
@@ -112,35 +157,37 @@ local function criarToggle(nome, posY)
 end
 
 -- 🔘 SLIDER (para velocidade)
-local speedValue = 50
+local speedSliderValue = 50
 local function criarSlider(nome, posY, min, max, padrao)
-	local bg = Instance.new("Frame", frame)
-	bg.Size = UDim2.new(1,-20,0,60)
+	local bg = Instance.new("Frame", mainContainer)
+	bg.Size = UDim2.new(1,-20,0,70)
 	bg.Position = UDim2.new(0,10,0,posY)
 	bg.BackgroundColor3 = Color3.fromRGB(40,40,40)
 	
 	Instance.new("UICorner", bg).CornerRadius = UDim.new(0,8)
 	
 	local txt = Instance.new("TextLabel", bg)
-	txt.Size = UDim2.new(1,0,0,20)
+	txt.Size = UDim2.new(1,0,0,25)
 	txt.Position = UDim2.new(0,10,0,5)
 	txt.Text = nome
 	txt.Font = Enum.Font.GothamBold
 	txt.TextColor3 = Color3.new(1,1,1)
 	txt.BackgroundTransparency = 1
 	txt.TextXAlignment = Enum.TextXAlignment.Left
+	txt.TextSize = 14
 	
 	local valorTxt = Instance.new("TextLabel", bg)
-	valorTxt.Size = UDim2.new(0,50,0,20)
-	valorTxt.Position = UDim2.new(1,-60,0,5)
+	valorTxt.Size = UDim2.new(0,60,0,25)
+	valorTxt.Position = UDim2.new(1,-70,0,5)
 	valorTxt.Text = tostring(padrao)
 	valorTxt.Font = Enum.Font.GothamBold
-	valorTxt.TextColor3 = Color3.fromRGB(0,170,0)
+	valorTxt.TextColor3 = Color3.fromRGB(255,255,255)
 	valorTxt.BackgroundTransparency = 1
+	valorTxt.TextSize = 14
 	
 	local sliderBg = Instance.new("Frame", bg)
 	sliderBg.Size = UDim2.new(1,-20,0,4)
-	sliderBg.Position = UDim2.new(0,10,0,35)
+	sliderBg.Position = UDim2.new(0,10,0,45)
 	sliderBg.BackgroundColor3 = Color3.fromRGB(80,80,80)
 	Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1,0)
 	
@@ -150,8 +197,8 @@ local function criarSlider(nome, posY, min, max, padrao)
 	Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1,0)
 	
 	local sliderBtn = Instance.new("TextButton", sliderBg)
-	sliderBtn.Size = UDim2.new(0,12,0,12)
-	sliderBtn.Position = UDim2.new((padrao - min) / (max - min), -0.5, 0.5, -6)
+	sliderBtn.Size = UDim2.new(0,14,0,14)
+	sliderBtn.Position = UDim2.new((padrao - min) / (max - min), -0.5, 0.5, -7)
 	sliderBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
 	sliderBtn.Text = ""
 	Instance.new("UICorner", sliderBtn).CornerRadius = UDim.new(1,0)
@@ -183,9 +230,9 @@ local function criarSlider(nome, posY, min, max, padrao)
 				valor = math.floor(valor)
 				
 				sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-				sliderBtn.Position = UDim2.new(percent, -6, 0.5, -6)
+				sliderBtn.Position = UDim2.new(percent, -7, 0.5, -7)
 				valorTxt.Text = tostring(valor)
-				speedValue = valor
+				speedSliderValue = valor
 			end
 		end
 	end)
@@ -194,50 +241,111 @@ local function criarSlider(nome, posY, min, max, padrao)
 end
 
 -- FUNÇÕES
-local getAuto = criarToggle("Auto Attack", 50)
-local getEsp = criarToggle("ESP", 110)
-local getSpin = criarToggle("Spin Bot", 170)
-local getReset = criarToggle("Reset Player", 230)
-local getJump = criarToggle("Super Pulo", 290)
-local getAutoHit = criarToggle("Auto Hit", 350)
-local getAntiHit = criarToggle("Anti Hit", 410)
-local getSpeedToggle = criarToggle("Speed", 470)
-local getSpeedValue = criarSlider("Velocidade", 530, 16, 120, 50)
+local getAuto = criarToggle("Auto Attack", 10)
+local getEsp = criarToggle("ESP", 60)
+local getSpin = criarToggle("Spin Bot", 110)
+local getReset = criarToggle("Reset Player", 160)
+local getJump = criarToggle("Super Pulo", 210)
+local getAutoHit = criarToggle("Auto Hit", 260)
+local getAntiHit = criarToggle("Anti Hit", 310)
+local getSpeedToggle = criarToggle("Speed", 360)
+local getSpeedValue = criarSlider("Velocidade", 410, 16, 120, 50)
 
--- SEÇÃO DE CRÉDITOS
-local creditSection = Instance.new("Frame", frame)
-creditSection.Size = UDim2.new(1,0,0,60)
-creditSection.Position = UDim2.new(0,0,1,-70)
-creditSection.BackgroundColor3 = Color3.fromRGB(30,30,30)
-creditSection.BackgroundTransparency = 0.3
-Instance.new("UICorner", creditSection).CornerRadius = UDim.new(0,8)
+-- Container de Créditos
+local function criarCreditos()
+	local function criarCard(nome, desc, cor, posY)
+		local card = Instance.new("Frame", creditsContainer)
+		card.Size = UDim2.new(1,-20,0,80)
+		card.Position = UDim2.new(0,10,0,posY)
+		card.BackgroundColor3 = cor
+		Instance.new("UICorner", card).CornerRadius = UDim.new(0,12)
+		
+		local nomeLabel = Instance.new("TextLabel", card)
+		nomeLabel.Size = UDim2.new(1,0,0,30)
+		nomeLabel.Position = UDim2.new(0,10,0,10)
+		nomeLabel.Text = nome
+		nomeLabel.Font = Enum.Font.GothamBold
+		nomeLabel.TextColor3 = Color3.new(1,1,1)
+		nomeLabel.TextSize = 18
+		nomeLabel.BackgroundTransparency = 1
+		nomeLabel.TextXAlignment = Enum.TextXAlignment.Left
+		
+		local descLabel = Instance.new("TextLabel", card)
+		descLabel.Size = UDim2.new(1,0,0,25)
+		descLabel.Position = UDim2.new(0,10,0,45)
+		descLabel.Text = desc
+		descLabel.Font = Enum.Font.Gotham
+		descLabel.TextColor3 = Color3.fromRGB(200,200,200)
+		descLabel.TextSize = 12
+		descLabel.BackgroundTransparency = 1
+		descLabel.TextXAlignment = Enum.TextXAlignment.Left
+	end
+	
+	-- Título da aba
+	local titleCred = Instance.new("TextLabel", creditsContainer)
+	titleCred.Size = UDim2.new(1,0,0,40)
+	titleCred.Position = UDim2.new(0,10,0,5)
+	titleCred.Text = "👥 DESENVOLVEDORES"
+	titleCred.Font = Enum.Font.GothamBold
+	titleCred.TextColor3 = Color3.fromRGB(255,215,0)
+	titleCred.TextSize = 18
+	titleCred.BackgroundTransparency = 1
+	titleCred.TextXAlignment = Enum.TextXAlignment.Left
+	
+	-- Cards dos criadores
+	criarCard("⭐ ZZZ", "Desenvolvedor Principal | Criador do Projeto", Color3.fromRGB(80,50,50), 50)
+	criarCard("⚡ mathyas", "Co-Desenvolvedor | Programador", Color3.fromRGB(50,50,80), 140)
+	
+	-- Versão
+	local versionFrame = Instance.new("Frame", creditsContainer)
+	versionFrame.Size = UDim2.new(1,-20,0,50)
+	versionFrame.Position = UDim2.new(0,10,0,230)
+	versionFrame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+	Instance.new("UICorner", versionFrame).CornerRadius = UDim.new(0,8)
+	
+	local versionText = Instance.new("TextLabel", versionFrame)
+	versionText.Size = UDim2.new(1,0,1,0)
+	versionText.Text = "📌 Versão 2.0\n🔥 Premium Script"
+	versionText.Font = Enum.Font.GothamBold
+	versionText.TextColor3 = Color3.fromRGB(150,150,150)
+	versionText.TextSize = 12
+	versionText.BackgroundTransparency = 1
+	versionText.TextWrapped = true
+	
+	-- Agradecimento
+	local thanksFrame = Instance.new("Frame", creditsContainer)
+	thanksFrame.Size = UDim2.new(1,-20,0,60)
+	thanksFrame.Position = UDim2.new(0,10,0,290)
+	thanksFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+	Instance.new("UICorner", thanksFrame).CornerRadius = UDim.new(0,8)
+	
+	local thanksText = Instance.new("TextLabel", thanksFrame)
+	thanksText.Size = UDim2.new(1,0,1,0)
+	thanksText.Text = "❤️ Obrigado por usar nosso script!\n🎮 Aproveite as funcionalidades"
+	thanksText.Font = Enum.Font.Gotham
+	thanksText.TextColor3 = Color3.fromRGB(200,200,200)
+	thanksText.TextSize = 11
+	thanksText.BackgroundTransparency = 1
+	thanksText.TextWrapped = true
+end
 
-local creditTitle = Instance.new("TextLabel", creditSection)
-creditTitle.Size = UDim2.new(1,0,0,20)
-creditTitle.Position = UDim2.new(0,0,0,5)
-creditTitle.Text = "CRÉDITOS"
-creditTitle.Font = Enum.Font.GothamBold
-creditTitle.TextColor3 = Color3.fromRGB(255,215,0)
-creditTitle.BackgroundTransparency = 1
-creditTitle.TextSize = 14
+-- Criar créditos
+criarCreditos()
 
-local credit1 = Instance.new("TextLabel", creditSection)
-credit1.Size = UDim2.new(1,0,0,20)
-credit1.Position = UDim2.new(0,0,0,25)
-credit1.Text = "👑 ZZZ"
-credit1.Font = Enum.Font.GothamBold
-credit1.TextColor3 = Color3.fromRGB(255,255,255)
-credit1.BackgroundTransparency = 1
-credit1.TextSize = 12
+-- Controle das abas
+mainTabBtn.MouseButton1Click:Connect(function()
+	mainTabBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+	creditsTabBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	mainContainer.Visible = true
+	creditsContainer.Visible = false
+end)
 
-local credit2 = Instance.new("TextLabel", creditSection)
-credit2.Size = UDim2.new(1,0,0,20)
-credit2.Position = UDim2.new(0,0,0,42)
-credit2.Text = "⚡ mathyas"
-credit2.Font = Enum.Font.GothamBold
-credit2.TextColor3 = Color3.fromRGB(255,255,255)
-credit2.BackgroundTransparency = 1
-credit2.TextSize = 12
+creditsTabBtn.MouseButton1Click:Connect(function()
+	creditsTabBtn.BackgroundColor3 = Color3.fromRGB(60,60,60)
+	mainTabBtn.BackgroundColor3 = Color3.fromRGB(40,40,40)
+	mainContainer.Visible = false
+	creditsContainer.Visible = true
+end)
 
 -- ABRIR / FECHAR
 openBtn.MouseButton1Click:Connect(function()
@@ -248,10 +356,9 @@ close.MouseButton1Click:Connect(function()
 	frame.Visible = false
 end)
 
--- AUTO ATTACK (Movimento em direção ao inimigo)
+-- AUTO ATTACK
 RunService.RenderStepped:Connect(function()
 	if getAuto() and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-
 		local hrp = player.Character.HumanoidRootPart
 		local closest, dist = nil, math.huge
 
@@ -272,7 +379,7 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- AUTO HIT (Bate automaticamente no inimigo)
+-- AUTO HIT
 RunService.RenderStepped:Connect(function()
 	if getAutoHit() and player.Character then
 		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
@@ -308,19 +415,17 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- ANTI HIT (Imunidade a dano - CORRIGIDO)
+-- ANTI HIT
 local antiHitActive = false
 local antiHitConnection = nil
 
 local function setupAntiHit(character)
-	local humanoid = character:WaitForChild("Humanoid", 5)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
 	if humanoid and antiHitActive then
-		-- Remove conexão anterior se existir
 		if antiHitConnection then
 			antiHitConnection:Disconnect()
 		end
 		
-		-- Conecta para manter a saúde no máximo
 		antiHitConnection = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
 			if antiHitActive and humanoid and humanoid.Parent then
 				local maxHealth = humanoid.MaxHealth
@@ -330,12 +435,10 @@ local function setupAntiHit(character)
 			end
 		end)
 		
-		-- Garante que a saúde está no máximo agora
 		humanoid.Health = humanoid.MaxHealth
 	end
 end
 
--- Monitora o toggle do Anti Hit
 RunService.RenderStepped:Connect(function()
 	local newState = getAntiHit()
 	
@@ -351,7 +454,6 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- Quando o personagem renascer
 player.CharacterAdded:Connect(function(character)
 	task.wait(0.5)
 	if antiHitActive then
@@ -359,19 +461,23 @@ player.CharacterAdded:Connect(function(character)
 	end
 end)
 
--- SPEED (Velocidade ajustável - CORRIGIDO)
+-- SPEED (CORRIGIDO - DEFINITIVO)
+local currentSpeed = 16
+
 RunService.RenderStepped:Connect(function()
 	if player.Character then
 		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
 		if humanoid then
 			if getSpeedToggle() then
-				local speed = getSpeedValue()
-				if humanoid.WalkSpeed ~= speed then
-					humanoid.WalkSpeed = speed
+				local desiredSpeed = getSpeedValue()
+				if humanoid.WalkSpeed ~= desiredSpeed then
+					humanoid.WalkSpeed = desiredSpeed
+					currentSpeed = desiredSpeed
 				end
 			else
 				if humanoid.WalkSpeed ~= 16 then
 					humanoid.WalkSpeed = 16
+					currentSpeed = 16
 				end
 			end
 		end
