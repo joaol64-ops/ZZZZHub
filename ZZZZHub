@@ -30,8 +30,8 @@ strokeBtn.Thickness = 2
 
 -- 🧱 PAINEL
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0,280,0,510)
-frame.Position = UDim2.new(0.5,-140,0.5,-255)
+frame.Size = UDim2.new(0,300,0,580)
+frame.Position = UDim2.new(0.5,-150,0.5,-290)
 frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
 frame.Visible = false
 frame.Active = true
@@ -112,6 +112,7 @@ local function criarToggle(nome, posY)
 end
 
 -- 🔘 SLIDER (para velocidade)
+local speedValue = 50
 local function criarSlider(nome, posY, min, max, padrao)
 	local bg = Instance.new("Frame", frame)
 	bg.Size = UDim2.new(1,-20,0,60)
@@ -174,15 +175,18 @@ local function criarSlider(nome, posY, min, max, padrao)
 			local sliderAbsPos = sliderBg.AbsolutePosition
 			local sliderWidth = sliderBg.AbsoluteSize.X
 			
-			local percent = (mousePos.X - sliderAbsPos.X) / sliderWidth
-			percent = math.clamp(percent, 0, 1)
-			
-			valor = min + (max - min) * percent
-			valor = math.floor(valor)
-			
-			sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-			sliderBtn.Position = UDim2.new(percent, -6, 0.5, -6)
-			valorTxt.Text = tostring(valor)
+			if sliderWidth > 0 then
+				local percent = (mousePos.X - sliderAbsPos.X) / sliderWidth
+				percent = math.clamp(percent, 0, 1)
+				
+				valor = min + (max - min) * percent
+				valor = math.floor(valor)
+				
+				sliderFill.Size = UDim2.new(percent, 0, 1, 0)
+				sliderBtn.Position = UDim2.new(percent, -6, 0.5, -6)
+				valorTxt.Text = tostring(valor)
+				speedValue = valor
+			end
 		end
 	end)
 	
@@ -196,18 +200,44 @@ local getSpin = criarToggle("Spin Bot", 170)
 local getReset = criarToggle("Reset Player", 230)
 local getJump = criarToggle("Super Pulo", 290)
 local getAutoHit = criarToggle("Auto Hit", 350)
-local getAntiHit = criarToggle("Anti Hit", 410) -- Anti Hit
+local getAntiHit = criarToggle("Anti Hit", 410)
 local getSpeedToggle = criarToggle("Speed", 470)
-local speedValue = criarSlider("Velocidade", 530, 16, 120, 50)
+local getSpeedValue = criarSlider("Velocidade", 530, 16, 120, 50)
 
--- CRÉDITO
-local credit = Instance.new("TextLabel", frame)
-credit.Size = UDim2.new(1,0,0,20)
-credit.Position = UDim2.new(0,0,1,-20)
-credit.Text = "Feito Por Zzz.oficial"
-credit.Font = Enum.Font.GothamBold
-credit.TextColor3 = Color3.fromRGB(150,150,150)
-credit.BackgroundTransparency = 1
+-- SEÇÃO DE CRÉDITOS
+local creditSection = Instance.new("Frame", frame)
+creditSection.Size = UDim2.new(1,0,0,60)
+creditSection.Position = UDim2.new(0,0,1,-70)
+creditSection.BackgroundColor3 = Color3.fromRGB(30,30,30)
+creditSection.BackgroundTransparency = 0.3
+Instance.new("UICorner", creditSection).CornerRadius = UDim.new(0,8)
+
+local creditTitle = Instance.new("TextLabel", creditSection)
+creditTitle.Size = UDim2.new(1,0,0,20)
+creditTitle.Position = UDim2.new(0,0,0,5)
+creditTitle.Text = "CRÉDITOS"
+creditTitle.Font = Enum.Font.GothamBold
+creditTitle.TextColor3 = Color3.fromRGB(255,215,0)
+creditTitle.BackgroundTransparency = 1
+creditTitle.TextSize = 14
+
+local credit1 = Instance.new("TextLabel", creditSection)
+credit1.Size = UDim2.new(1,0,0,20)
+credit1.Position = UDim2.new(0,0,0,25)
+credit1.Text = "👑 ZZZ"
+credit1.Font = Enum.Font.GothamBold
+credit1.TextColor3 = Color3.fromRGB(255,255,255)
+credit1.BackgroundTransparency = 1
+credit1.TextSize = 12
+
+local credit2 = Instance.new("TextLabel", creditSection)
+credit2.Size = UDim2.new(1,0,0,20)
+credit2.Position = UDim2.new(0,0,0,42)
+credit2.Text = "⚡ mathyas"
+credit2.Font = Enum.Font.GothamBold
+credit2.TextColor3 = Color3.fromRGB(255,255,255)
+credit2.BackgroundTransparency = 1
+credit2.TextSize = 12
 
 -- ABRIR / FECHAR
 openBtn.MouseButton1Click:Connect(function()
@@ -272,100 +302,73 @@ RunService.RenderStepped:Connect(function()
 					if tool then
 						tool:Activate()
 					end
-					
-					local activeTool = player.Character:FindFirstChildOfClass("Tool")
-					if activeTool then
-						activeTool:Activate()
-					end
 				end
 			end
 		end
 	end
 end)
 
--- ANTI HIT (Imunidade a dano)
-local originalHealth = nil
-local originalMaxHealth = nil
+-- ANTI HIT (Imunidade a dano - CORRIGIDO)
+local antiHitActive = false
+local antiHitConnection = nil
 
-RunService.RenderStepped:Connect(function()
-	if getAntiHit() and player.Character then
-		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-		if humanoid then
-			-- Salva a saúde original se ainda não salvou
-			if originalHealth == nil then
-				originalHealth = humanoid.Health
-				originalMaxHealth = humanoid.MaxHealth
-			end
-			
-			-- Mantém a saúde no máximo
-			if humanoid.Health < originalMaxHealth then
-				humanoid.Health = originalMaxHealth
-			end
-			
-			-- Remove efeitos de dano como queimadura, veneno, etc.
-			for _, effect in pairs(player.Character:GetChildren()) do
-				if effect:IsA("Fire") or effect:IsA("Smoke") or effect:IsA("Sparkles") then
-					effect:Destroy()
-				end
-			end
+local function setupAntiHit(character)
+	local humanoid = character:WaitForChild("Humanoid", 5)
+	if humanoid and antiHitActive then
+		-- Remove conexão anterior se existir
+		if antiHitConnection then
+			antiHitConnection:Disconnect()
 		end
-	else
-		-- Reseta quando desativado
-		if originalHealth ~= nil and player.Character then
-			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-			if humanoid then
-				humanoid.Health = originalHealth
-			end
-			originalHealth = nil
-			originalMaxHealth = nil
-		end
-	end
-end)
-
--- Conexão para detectar dano e prevenir (método alternativo)
-if player.Character then
-	local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-			if getAntiHit() and humanoid and originalMaxHealth then
-				if humanoid.Health < originalMaxHealth then
-					humanoid.Health = originalMaxHealth
-				end
-			end
-		end)
-	end
-end
-
--- Conexão para quando o personagem renascer
-player.CharacterAdded:Connect(function(character)
-	task.wait(0.5)
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-			if getAntiHit() and humanoid then
+		
+		-- Conecta para manter a saúde no máximo
+		antiHitConnection = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+			if antiHitActive and humanoid and humanoid.Parent then
 				local maxHealth = humanoid.MaxHealth
 				if humanoid.Health < maxHealth then
 					humanoid.Health = maxHealth
 				end
 			end
 		end)
+		
+		-- Garante que a saúde está no máximo agora
+		humanoid.Health = humanoid.MaxHealth
 	end
+end
+
+-- Monitora o toggle do Anti Hit
+RunService.RenderStepped:Connect(function()
+	local newState = getAntiHit()
 	
-	-- Atualiza a referência
-	if getAntiHit() then
-		originalHealth = nil
-		originalMaxHealth = nil
+	if newState ~= antiHitActive then
+		antiHitActive = newState
+		
+		if antiHitActive and player.Character then
+			setupAntiHit(player.Character)
+		elseif not antiHitActive and antiHitConnection then
+			antiHitConnection:Disconnect()
+			antiHitConnection = nil
+		end
 	end
 end)
 
--- SPEED (Velocidade ajustável)
+-- Quando o personagem renascer
+player.CharacterAdded:Connect(function(character)
+	task.wait(0.5)
+	if antiHitActive then
+		setupAntiHit(character)
+	end
+end)
+
+-- SPEED (Velocidade ajustável - CORRIGIDO)
 RunService.RenderStepped:Connect(function()
 	if player.Character then
 		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
 		if humanoid then
 			if getSpeedToggle() then
-				local speed = speedValue()
-				humanoid.WalkSpeed = speed
+				local speed = getSpeedValue()
+				if humanoid.WalkSpeed ~= speed then
+					humanoid.WalkSpeed = speed
+				end
 			else
 				if humanoid.WalkSpeed ~= 16 then
 					humanoid.WalkSpeed = 16
@@ -402,10 +405,16 @@ end)
 -- SUPER JUMP
 RunService.RenderStepped:Connect(function()
 	if getJump() and player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-		player.Character:FindFirstChildOfClass("Humanoid").JumpPower = 120
+		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid.JumpPower ~= 120 then
+			humanoid.JumpPower = 120
+		end
 	else
 		if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
-			player.Character:FindFirstChildOfClass("Humanoid").JumpPower = 50
+			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+			if humanoid.JumpPower ~= 50 then
+				humanoid.JumpPower = 50
+			end
 		end
 	end
 end)
@@ -435,7 +444,7 @@ RunService.RenderStepped:Connect(function()
 				end
 
 				local txt = esp:FindFirstChildOfClass("TextLabel")
-				if txt and player.Character then
+				if txt and player.Character and player.Character:FindFirstChild("Head") then
 					local d = (head.Position - player.Character.Head.Position).Magnitude
 					txt.Text = math.floor(d).."m"
 				end
