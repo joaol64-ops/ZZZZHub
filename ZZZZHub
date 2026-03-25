@@ -1,7 +1,6 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 
@@ -494,81 +493,158 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- ANTI HIT
+-- ANTI HIT CORRIGIDO (SISTEMA ULTRA AGRESSIVO)
 local antiHitActive = false
-local antiHitConnection = nil
+local antiHitConnections = {}
 
-local function setupAntiHit(character)
+-- Função para proteger o personagem
+local function protectCharacter(character)
+	if not character then return end
+	
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if humanoid and antiHitActive then
-		if antiHitConnection then
-			antiHitConnection:Disconnect()
+	if not humanoid then return end
+	
+	-- Salva a saúde máxima
+	local maxHealth = humanoid.MaxHealth
+	
+	-- Força a saúde máxima imediatamente
+	humanoid.Health = maxHealth
+	
+	-- Conexão para monitorar saúde
+	local healthConnection = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
+		if antiHitActive and humanoid and humanoid.Parent then
+			local currentMaxHealth = humanoid.MaxHealth
+			if humanoid.Health < currentMaxHealth then
+				humanoid.Health = currentMaxHealth
+			end
+		end
+	end)
+	
+	-- Conexão para monitorar se o humanoid foi trocado
+	local humanoidConnection
+	humanoidConnection = humanoid.AncestryChanged:Connect(function()
+		if not antiHitActive then return end
+		if not humanoid.Parent then
+			-- Se o humanoid foi removido, tenta proteger novamente
+			task.wait(0.1)
+			if player.Character then
+				protectCharacter(player.Character)
+			end
+			humanoidConnection:Disconnect()
+		end
+	end)
+	
+	-- Armazena as conexões
+	antiHitConnections[character] = {
+		health = healthConnection,
+		humanoid = humanoidConnection
+	}
+end
+
+-- Remove proteção de um personagem
+local function unprotectCharacter(character)
+	if antiHitConnections[character] then
+		if antiHitConnections[character].health then
+			antiHitConnections[character].health:Disconnect()
+		end
+		if antiHitConnections[character].humanoid then
+			antiHitConnections[character].humanoid:Disconnect()
+		end
+		antiHitConnections[character] = nil
+	end
+end
+
+-- Monitora o toggle do Anti Hit
+spawn(function()
+	while true do
+		task.wait(0.1)
+		local newState = getAntiHit()
+		
+		if newState ~= antiHitActive then
+			antiHitActive = newState
+			
+			if antiHitActive then
+				-- Ativou: protege o personagem atual
+				if player.Character then
+					protectCharacter(player.Character)
+				end
+			else
+				-- Desativou: remove proteção do personagem atual
+				if player.Character then
+					unprotectCharacter(player.Character)
+				end
+			end
 		end
 		
-		antiHitConnection = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-			if antiHitActive and humanoid and humanoid.Parent then
+		-- Mantém a proteção ativa se estiver ativada
+		if antiHitActive and player.Character then
+			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+			if humanoid then
 				local maxHealth = humanoid.MaxHealth
 				if humanoid.Health < maxHealth then
 					humanoid.Health = maxHealth
 				end
 			end
-		end)
-		
+		end
+	end
+end)
+
+-- Quando o personagem renasce
+player.CharacterAdded:Connect(function(character)
+	task.wait(0.2)
+	if antiHitActive then
+		protectCharacter(character)
+	end
+end)
+
+-- Conexão adicional para quando o Humanoid é adicionado
+player.CharacterAdded:Connect(function(character)
+	local humanoid = character:WaitForChild("Humanoid", 5)
+	if humanoid and antiHitActive then
+		task.wait(0.1)
 		humanoid.Health = humanoid.MaxHealth
+	end
+end)
+
+-- SPEED
+local speedEnabled = false
+local currentSpeed = 16
+
+local function forceSpeed()
+	if not player.Character then return end
+	
+	local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+	if not humanoid then return end
+	
+	if speedEnabled then
+		if humanoid.WalkSpeed ~= currentSpeed then
+			humanoid.WalkSpeed = currentSpeed
+		end
+	else
+		if humanoid.WalkSpeed ~= 16 then
+			humanoid.WalkSpeed = 16
+		end
 	end
 end
 
-RunService.RenderStepped:Connect(function()
-	local newState = getAntiHit()
-	
-	if newState ~= antiHitActive then
-		antiHitActive = newState
-		
-		if antiHitActive and player.Character then
-			setupAntiHit(player.Character)
-		elseif not antiHitActive and antiHitConnection then
-			antiHitConnection:Disconnect()
-			antiHitConnection = nil
-		end
+spawn(function()
+	while true do
+		task.wait(0.05)
+		speedEnabled = getSpeedToggle()
+		currentSpeed = getSpeedValue()
+		forceSpeed()
 	end
 end)
 
 player.CharacterAdded:Connect(function(character)
-	task.wait(0.5)
-	if antiHitActive then
-		setupAntiHit(character)
-	end
-end)
-
--- SPEED CORRIGIDO (DEFINITIVO)
-local lastSpeedValue = 16
-local speedEnabled = false
-
--- Loop dedicado para velocidade
-spawn(function()
-	while true do
-		task.wait(0.1) -- Verifica a cada 0.1 segundos
-		if player.Character then
-			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-			if humanoid then
-				local currentState = getSpeedToggle()
-				local currentSpeedValue = getSpeedValue()
-				
-				if currentState then
-					-- Speed ativado
-					if humanoid.WalkSpeed ~= currentSpeedValue then
-						humanoid.WalkSpeed = currentSpeedValue
-						lastSpeedValue = currentSpeedValue
-					end
-				else
-					-- Speed desativado
-					if humanoid.WalkSpeed ~= 16 then
-						humanoid.WalkSpeed = 16
-						lastSpeedValue = 16
-					end
-				end
-			end
-		end
+	task.wait(0.2)
+	forceSpeed()
+	
+	local humanoid = character:WaitForChild("Humanoid", 5)
+	if humanoid then
+		humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
+			forceSpeed()
+		end)
 	end
 end)
 
@@ -596,92 +672,45 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- SUPER JUMP CORRIGIDO (Pulo múltiplo)
+-- SUPER JUMP
 local superJumpActive = false
 local lastJumpTime = 0
 
--- Função para permitir pulo múltiplo
-local function setupSuperJump(character)
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if humanoid then
-		-- Aumenta o JumpPower
-		humanoid.JumpPower = 120
-		
-		-- Remove a limitação de pulo no ar
-		local function onJumpRequest()
-			if superJumpActive then
-				-- Permite pular novamente mesmo no ar
-				humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-			end
-		end
-		
-		-- Conecta no pulo
-		local jumpConnection
-		jumpConnection = humanoid:GetPropertyChangedSignal("Jump"):Connect(function()
-			if superJumpActive and humanoid.Jump and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
-				task.wait(0.05)
-				if superJumpActive then
-					humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-				end
-			end
-		end)
-		
-		return jumpConnection
-	end
-end
-
--- Monitora o Super Jump
-local superJumpConnection = nil
-
-RunService.RenderStepped:Connect(function()
-	local newState = getJump()
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
 	
-	if newState ~= superJumpActive then
-		superJumpActive = newState
-		
-		if superJumpActive and player.Character then
-			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-			if humanoid then
+	if getJump() and input.KeyCode == Enum.KeyCode.Space then
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid then
+			local currentTime = tick()
+			if currentTime - lastJumpTime > 0.08 then
+				lastJumpTime = currentTime
+				humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
 				humanoid.JumpPower = 120
 			end
-		elseif not superJumpActive and player.Character then
-			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-			if humanoid then
-				humanoid.JumpPower = 50
-			end
 		end
 	end
-	
-	-- Mantém o JumpPower enquanto ativo
-	if superJumpActive and player.Character then
+end)
+
+RunService.RenderStepped:Connect(function()
+	if getJump() and player.Character then
 		local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
 		if humanoid and humanoid.JumpPower ~= 120 then
 			humanoid.JumpPower = 120
 		end
-	end
-end)
-
--- Conexão para pulo múltiplo no espaço
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	
-	if superJumpActive and input.KeyCode == Enum.KeyCode.Space then
-		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
-		if humanoid then
-			-- Permite pular no ar
-			local currentTime = tick()
-			if currentTime - lastJumpTime > 0.1 then -- Pequeno cooldown
-				lastJumpTime = currentTime
-				humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+	else
+		if player.Character then
+			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+			if humanoid and humanoid.JumpPower ~= 50 then
+				humanoid.JumpPower = 50
 			end
 		end
 	end
 end)
 
--- Quando o personagem renascer, aplica o super jump novamente
 player.CharacterAdded:Connect(function(character)
 	task.wait(0.5)
-	if superJumpActive then
+	if getJump() then
 		local humanoid = character:FindFirstChildOfClass("Humanoid")
 		if humanoid then
 			humanoid.JumpPower = 120
