@@ -1,8 +1,66 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+local HttpService = game:GetService("HttpService")
 
 local player = Players.LocalPlayer
+
+-- Sistema de Salvamento
+local saveData = {
+    autoAttack = false,
+    esp = false,
+    spin = false,
+    reset = false,
+    jump = false,
+    autoHit = false,
+    speed = false
+}
+
+local SAVE_KEY = "ZzzUI_SaveData"
+
+-- Função para carregar dados salvos
+local function loadData()
+    pcall(function()
+        local success, data = pcall(function()
+            return HttpService:JSONDecode(HttpService:GetAsync(SAVE_KEY))
+        end)
+        
+        if success and data then
+            for key, value in pairs(data) do
+                if saveData[key] ~= nil then
+                    saveData[key] = value
+                end
+            end
+            print("✅ Dados carregados com sucesso!")
+        else
+            print("⚠️ Nenhum dado salvo encontrado, usando padrões")
+        end
+    end)
+end
+
+-- Função para salvar dados
+local function saveDataToFile()
+    pcall(function()
+        local json = HttpService:JSONEncode(saveData)
+        HttpService:SetAsync(SAVE_KEY, json)
+        print("💾 Configurações salvas!")
+        
+        -- Mostrar notificação
+        local notif = Instance.new("TextLabel", frame)
+        notif.Size = UDim2.new(0,200,0,30)
+        notif.Position = UDim2.new(0.5,-100,0.5,100)
+        notif.Text = "💾 Configurações salvas!"
+        notif.BackgroundColor3 = Color3.fromRGB(0,170,0)
+        notif.TextColor3 = Color3.new(1,1,1)
+        notif.Font = Enum.Font.GothamBold
+        notif.TextSize = 12
+        Instance.new("UICorner", notif).CornerRadius = UDim.new(0,5)
+        notif.ZIndex = 10
+        
+        task.wait(2)
+        notif:Destroy()
+    end)
+end
 
 -- GUI
 local gui = Instance.new("ScreenGui")
@@ -30,8 +88,8 @@ strokeBtn.Thickness = 2
 
 -- 🧱 PAINEL PRINCIPAL
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0,280,0,350)
-frame.Position = UDim2.new(0.5,-140,0.5,-175)
+frame.Size = UDim2.new(0,280,0,400)
+frame.Position = UDim2.new(0.5,-140,0.5,-200)
 frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
 frame.Visible = false
 frame.Active = true
@@ -94,7 +152,7 @@ local mainContainer = Instance.new("ScrollingFrame", frame)
 mainContainer.Size = UDim2.new(1,0,1,-75)
 mainContainer.Position = UDim2.new(0,0,0,65)
 mainContainer.BackgroundTransparency = 1
-mainContainer.CanvasSize = UDim2.new(0,0,0,380)
+mainContainer.CanvasSize = UDim2.new(0,0,0,430)
 mainContainer.ScrollBarThickness = 6
 mainContainer.BorderSizePixel = 0
 
@@ -107,8 +165,9 @@ creditsContainer.ScrollBarThickness = 6
 creditsContainer.BorderSizePixel = 0
 creditsContainer.Visible = false
 
--- 🔘 TOGGLE
-local function criarToggle(nome, posY)
+-- 🔘 TOGGLE COM SALVAMENTO
+local toggles = {}
+local function criarToggle(nome, posY, saveKey)
 	local bg = Instance.new("Frame", mainContainer)
 	bg.Size = UDim2.new(1,-20,0,35)
 	bg.Position = UDim2.new(0,10,0,posY)
@@ -141,10 +200,17 @@ local function criarToggle(nome, posY)
 
 	Instance.new("UICorner", circle).CornerRadius = UDim.new(1,0)
 
-	local state = false
+	local state = saveData[saveKey] or false
+	
+	-- Aplicar estado inicial
+	if state then
+		toggle.BackgroundColor3 = Color3.fromRGB(0,170,0)
+		circle.Position = UDim2.new(1,-20,0.5,-9)
+	end
 
 	toggle.MouseButton1Click:Connect(function()
 		state = not state
+		saveData[saveKey] = state
 
 		if state then
 			toggle.BackgroundColor3 = Color3.fromRGB(0,170,0)
@@ -153,19 +219,75 @@ local function criarToggle(nome, posY)
 			toggle.BackgroundColor3 = Color3.fromRGB(80,80,80)
 			circle.Position = UDim2.new(0,2,0.5,-9)
 		end
+		
+		-- Salvar automaticamente quando mudar
+		saveDataToFile()
 	end)
 
 	return function() return state end
 end
 
--- FUNÇÕES
-local getAuto = criarToggle("Auto Attack", 5)
-local getEsp = criarToggle("ESP", 45)
-local getSpin = criarToggle("Spin Bot", 85)
-local getReset = criarToggle("Reset Player", 125)
-local getJump = criarToggle("Super Jump", 165)
-local getAutoHit = criarToggle("Auto Hit", 205)
-local getSpeed = criarToggle("Speed", 245)
+-- Botão de Salvar Manual
+local saveBtn = Instance.new("TextButton", mainContainer)
+saveBtn.Size = UDim2.new(1,-20,0,35)
+saveBtn.Position = UDim2.new(0,10,0,295)
+saveBtn.Text = "💾 SALVAR CONFIGURAÇÕES"
+saveBtn.Font = Enum.Font.GothamBold
+saveBtn.TextColor3 = Color3.new(1,1,1)
+saveBtn.BackgroundColor3 = Color3.fromRGB(0,100,0)
+saveBtn.TextSize = 12
+Instance.new("UICorner", saveBtn).CornerRadius = UDim.new(0,8)
+
+saveBtn.MouseButton1Click:Connect(function()
+	saveDataToFile()
+end)
+
+-- Botão de Reset
+local resetBtn = Instance.new("TextButton", mainContainer)
+resetBtn.Size = UDim2.new(1,-20,0,35)
+resetBtn.Position = UDim2.new(0,10,0,340)
+resetBtn.Text = "🔄 RESETAR CONFIGURAÇÕES"
+resetBtn.Font = Enum.Font.GothamBold
+resetBtn.TextColor3 = Color3.new(1,1,1)
+resetBtn.BackgroundColor3 = Color3.fromRGB(150,50,50)
+resetBtn.TextSize = 12
+Instance.new("UICorner", resetBtn).CornerRadius = UDim.new(0,8)
+
+resetBtn.MouseButton1Click:Connect(function()
+	for key in pairs(saveData) do
+		saveData[key] = false
+	end
+	saveDataToFile()
+	
+	-- Recarregar a GUI
+	frame.Visible = false
+	task.wait(0.5)
+	frame.Visible = true
+	
+	print("🔄 Configurações resetadas!")
+	local notif = Instance.new("TextLabel", frame)
+	notif.Size = UDim2.new(0,200,0,30)
+	notif.Position = UDim2.new(0.5,-100,0.5,100)
+	notif.Text = "🔄 Configurações resetadas!"
+	notif.BackgroundColor3 = Color3.fromRGB(200,50,50)
+	notif.TextColor3 = Color3.new(1,1,1)
+	notif.Font = Enum.Font.GothamBold
+	notif.TextSize = 12
+	Instance.new("UICorner", notif).CornerRadius = UDim.new(0,5)
+	notif.ZIndex = 10
+	
+	task.wait(2)
+	notif:Destroy()
+end)
+
+-- FUNÇÕES (com estado salvo)
+local getAuto = criarToggle("Auto Attack", 5, "autoAttack")
+local getEsp = criarToggle("ESP", 45, "esp")
+local getSpin = criarToggle("Spin Bot", 85, "spin")
+local getReset = criarToggle("Reset Player", 125, "reset")
+local getJump = criarToggle("Super Jump", 165, "jump")
+local getAutoHit = criarToggle("Auto Hit", 205, "autoHit")
+local getSpeed = criarToggle("Speed", 245, "speed")
 
 -- Função para abrir link do Discord
 local function openDiscord()
@@ -348,6 +470,9 @@ close.MouseButton1Click:Connect(function()
 	frame.Visible = false
 end)
 
+-- Carregar dados ao iniciar
+loadData()
+
 -- AUTO ATTACK
 RunService.RenderStepped:Connect(function()
 	if getAuto() and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
@@ -407,9 +532,8 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- SPEED (Desativado = 27, Ativado = 50) - MÉTODO ULTRA AGRESSIVO
+-- SPEED
 local speedEnabled = false
-local lastAppliedSpeed = 0
 
 local function applySpeed()
 	if not player.Character then return end
@@ -419,16 +543,12 @@ local function applySpeed()
 	
 	local targetSpeed = speedEnabled and 50 or 27
 	
-	-- Força a velocidade de todas as formas possíveis
 	if humanoid.WalkSpeed ~= targetSpeed then
 		humanoid.WalkSpeed = targetSpeed
-		lastAppliedSpeed = targetSpeed
 	end
 	
-	-- Tenta também no HumanoidRootPart (para jogos que usam física)
 	local hrp = player.Character:FindFirstChild("HumanoidRootPart")
 	if hrp then
-		-- Se estiver andando e a velocidade estiver baixa, força movimento
 		local moveDirection = hrp.CFrame.LookVector
 		if humanoid.MoveDirection.Magnitude > 0 then
 			if hrp.Velocity.Magnitude < targetSpeed - 5 then
@@ -438,32 +558,28 @@ local function applySpeed()
 	end
 end
 
--- Loop SUPER agressivo (0.03 segundos)
 spawn(function()
 	while true do
-		task.wait(0.03) -- 33 vezes por segundo
+		task.wait(0.03)
 		local newState = getSpeed()
 		if newState ~= speedEnabled then
 			speedEnabled = newState
 			applySpeed()
 		end
-		applySpeed() -- Sempre aplica
+		applySpeed()
 	end
 end)
 
--- Monitora quando o personagem renasce
 player.CharacterAdded:Connect(function(character)
 	task.wait(0.1)
 	applySpeed()
 	
 	local humanoid = character:WaitForChild("Humanoid", 5)
 	if humanoid then
-		-- Monitora qualquer mudança na velocidade
 		humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
 			applySpeed()
 		end)
 		
-		-- Força a velocidade constantemente
 		spawn(function()
 			while humanoid and humanoid.Parent do
 				task.wait(0.1)
@@ -596,3 +712,6 @@ RunService.RenderStepped:Connect(function()
 		end
 	end
 end)
+
+print("✅ Script carregado com sistema de salvamento!")
+print("💾 Suas configurações são salvas automaticamente!")
