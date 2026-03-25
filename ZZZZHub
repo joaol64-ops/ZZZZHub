@@ -30,8 +30,8 @@ strokeBtn.Thickness = 2
 
 -- 🧱 PAINEL PRINCIPAL
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0,280,0,450)
-frame.Position = UDim2.new(0.5,-140,0.5,-225)
+frame.Size = UDim2.new(0,280,0,400)
+frame.Position = UDim2.new(0.5,-140,0.5,-200)
 frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
 frame.Visible = false
 frame.Active = true
@@ -94,7 +94,7 @@ local mainContainer = Instance.new("ScrollingFrame", frame)
 mainContainer.Size = UDim2.new(1,0,1,-75)
 mainContainer.Position = UDim2.new(0,0,0,65)
 mainContainer.BackgroundTransparency = 1
-mainContainer.CanvasSize = UDim2.new(0,0,0,520)
+mainContainer.CanvasSize = UDim2.new(0,0,0,470)
 mainContainer.ScrollBarThickness = 6
 mainContainer.BorderSizePixel = 0
 
@@ -249,9 +249,8 @@ local getSpin = criarToggle("Spin Bot", 85)
 local getReset = criarToggle("Reset Player", 125)
 local getJump = criarToggle("Super Pulo", 165)
 local getAutoHit = criarToggle("Auto Hit", 205)
-local getAntiHit = criarToggle("Anti Hit", 245)
-local getSpeedToggle = criarToggle("Speed", 285)
-local getSpeedValue = criarSlider("Velocidade", 330, 16, 120, 50)
+local getSpeedToggle = criarToggle("Speed", 245)
+local getSpeedValue = criarSlider("Velocidade", 290, 16, 120, 50)
 
 -- Função para abrir link do Discord
 local function openDiscord()
@@ -490,119 +489,6 @@ RunService.RenderStepped:Connect(function()
 				end
 			end
 		end
-	end
-end)
-
--- ANTI HIT CORRIGIDO (SISTEMA ULTRA AGRESSIVO)
-local antiHitActive = false
-local antiHitConnections = {}
-
--- Função para proteger o personagem
-local function protectCharacter(character)
-	if not character then return end
-	
-	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	if not humanoid then return end
-	
-	-- Salva a saúde máxima
-	local maxHealth = humanoid.MaxHealth
-	
-	-- Força a saúde máxima imediatamente
-	humanoid.Health = maxHealth
-	
-	-- Conexão para monitorar saúde
-	local healthConnection = humanoid:GetPropertyChangedSignal("Health"):Connect(function()
-		if antiHitActive and humanoid and humanoid.Parent then
-			local currentMaxHealth = humanoid.MaxHealth
-			if humanoid.Health < currentMaxHealth then
-				humanoid.Health = currentMaxHealth
-			end
-		end
-	end)
-	
-	-- Conexão para monitorar se o humanoid foi trocado
-	local humanoidConnection
-	humanoidConnection = humanoid.AncestryChanged:Connect(function()
-		if not antiHitActive then return end
-		if not humanoid.Parent then
-			-- Se o humanoid foi removido, tenta proteger novamente
-			task.wait(0.1)
-			if player.Character then
-				protectCharacter(player.Character)
-			end
-			humanoidConnection:Disconnect()
-		end
-	end)
-	
-	-- Armazena as conexões
-	antiHitConnections[character] = {
-		health = healthConnection,
-		humanoid = humanoidConnection
-	}
-end
-
--- Remove proteção de um personagem
-local function unprotectCharacter(character)
-	if antiHitConnections[character] then
-		if antiHitConnections[character].health then
-			antiHitConnections[character].health:Disconnect()
-		end
-		if antiHitConnections[character].humanoid then
-			antiHitConnections[character].humanoid:Disconnect()
-		end
-		antiHitConnections[character] = nil
-	end
-end
-
--- Monitora o toggle do Anti Hit
-spawn(function()
-	while true do
-		task.wait(0.1)
-		local newState = getAntiHit()
-		
-		if newState ~= antiHitActive then
-			antiHitActive = newState
-			
-			if antiHitActive then
-				-- Ativou: protege o personagem atual
-				if player.Character then
-					protectCharacter(player.Character)
-				end
-			else
-				-- Desativou: remove proteção do personagem atual
-				if player.Character then
-					unprotectCharacter(player.Character)
-				end
-			end
-		end
-		
-		-- Mantém a proteção ativa se estiver ativada
-		if antiHitActive and player.Character then
-			local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
-			if humanoid then
-				local maxHealth = humanoid.MaxHealth
-				if humanoid.Health < maxHealth then
-					humanoid.Health = maxHealth
-				end
-			end
-		end
-	end
-end)
-
--- Quando o personagem renasce
-player.CharacterAdded:Connect(function(character)
-	task.wait(0.2)
-	if antiHitActive then
-		protectCharacter(character)
-	end
-end)
-
--- Conexão adicional para quando o Humanoid é adicionado
-player.CharacterAdded:Connect(function(character)
-	local humanoid = character:WaitForChild("Humanoid", 5)
-	if humanoid and antiHitActive then
-		task.wait(0.1)
-		humanoid.Health = humanoid.MaxHealth
 	end
 end)
 
