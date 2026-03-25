@@ -30,8 +30,8 @@ strokeBtn.Thickness = 2
 
 -- 🧱 PAINEL PRINCIPAL
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0,280,0,400)
-frame.Position = UDim2.new(0.5,-140,0.5,-200)
+frame.Size = UDim2.new(0,280,0,350)
+frame.Position = UDim2.new(0.5,-140,0.5,-175)
 frame.BackgroundColor3 = Color3.fromRGB(0,0,0)
 frame.Visible = false
 frame.Active = true
@@ -94,7 +94,7 @@ local mainContainer = Instance.new("ScrollingFrame", frame)
 mainContainer.Size = UDim2.new(1,0,1,-75)
 mainContainer.Position = UDim2.new(0,0,0,65)
 mainContainer.BackgroundTransparency = 1
-mainContainer.CanvasSize = UDim2.new(0,0,0,470)
+mainContainer.CanvasSize = UDim2.new(0,0,0,380)
 mainContainer.ScrollBarThickness = 6
 mainContainer.BorderSizePixel = 0
 
@@ -158,99 +158,14 @@ local function criarToggle(nome, posY)
 	return function() return state end
 end
 
--- 🔘 SLIDER (para velocidade)
-local speedSliderValue = 50
-local function criarSlider(nome, posY, min, max, padrao)
-	local bg = Instance.new("Frame", mainContainer)
-	bg.Size = UDim2.new(1,-20,0,60)
-	bg.Position = UDim2.new(0,10,0,posY)
-	bg.BackgroundColor3 = Color3.fromRGB(40,40,40)
-	
-	Instance.new("UICorner", bg).CornerRadius = UDim.new(0,8)
-	
-	local txt = Instance.new("TextLabel", bg)
-	txt.Size = UDim2.new(1,0,0,20)
-	txt.Position = UDim2.new(0,10,0,5)
-	txt.Text = nome
-	txt.Font = Enum.Font.GothamBold
-	txt.TextColor3 = Color3.new(1,1,1)
-	txt.BackgroundTransparency = 1
-	txt.TextXAlignment = Enum.TextXAlignment.Left
-	txt.TextSize = 12
-	
-	local valorTxt = Instance.new("TextLabel", bg)
-	valorTxt.Size = UDim2.new(0,50,0,20)
-	valorTxt.Position = UDim2.new(1,-60,0,5)
-	valorTxt.Text = tostring(padrao)
-	valorTxt.Font = Enum.Font.GothamBold
-	valorTxt.TextColor3 = Color3.fromRGB(255,255,255)
-	valorTxt.BackgroundTransparency = 1
-	valorTxt.TextSize = 12
-	
-	local sliderBg = Instance.new("Frame", bg)
-	sliderBg.Size = UDim2.new(1,-20,0,3)
-	sliderBg.Position = UDim2.new(0,10,0,38)
-	sliderBg.BackgroundColor3 = Color3.fromRGB(80,80,80)
-	Instance.new("UICorner", sliderBg).CornerRadius = UDim.new(1,0)
-	
-	local sliderFill = Instance.new("Frame", sliderBg)
-	sliderFill.Size = UDim2.new((padrao - min) / (max - min), 0, 1, 0)
-	sliderFill.BackgroundColor3 = Color3.fromRGB(0,170,0)
-	Instance.new("UICorner", sliderFill).CornerRadius = UDim.new(1,0)
-	
-	local sliderBtn = Instance.new("TextButton", sliderBg)
-	sliderBtn.Size = UDim2.new(0,12,0,12)
-	sliderBtn.Position = UDim2.new((padrao - min) / (max - min), -0.5, 0.5, -6)
-	sliderBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
-	sliderBtn.Text = ""
-	Instance.new("UICorner", sliderBtn).CornerRadius = UDim.new(1,0)
-	
-	local valor = padrao
-	local dragging = false
-	
-	sliderBtn.MouseButton1Down:Connect(function()
-		dragging = true
-	end)
-	
-	UserInputService.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			dragging = false
-		end
-	end)
-	
-	RunService.RenderStepped:Connect(function()
-		if dragging then
-			local mousePos = UserInputService:GetMouseLocation()
-			local sliderAbsPos = sliderBg.AbsolutePosition
-			local sliderWidth = sliderBg.AbsoluteSize.X
-			
-			if sliderWidth > 0 then
-				local percent = (mousePos.X - sliderAbsPos.X) / sliderWidth
-				percent = math.clamp(percent, 0, 1)
-				
-				valor = min + (max - min) * percent
-				valor = math.floor(valor)
-				
-				sliderFill.Size = UDim2.new(percent, 0, 1, 0)
-				sliderBtn.Position = UDim2.new(percent, -6, 0.5, -6)
-				valorTxt.Text = tostring(valor)
-				speedSliderValue = valor
-			end
-		end
-	end)
-	
-	return function() return valor end
-end
-
 -- FUNÇÕES
 local getAuto = criarToggle("Auto Attack", 5)
 local getEsp = criarToggle("ESP", 45)
 local getSpin = criarToggle("Spin Bot", 85)
 local getReset = criarToggle("Reset Player", 125)
-local getJump = criarToggle("Super Pulo", 165)
+local getJump = criarToggle("Super Jump", 165)
 local getAutoHit = criarToggle("Auto Hit", 205)
-local getSpeedToggle = criarToggle("Speed", 245)
-local getSpeedValue = criarSlider("Velocidade", 290, 16, 120, 50)
+local getSpeed = criarToggle("Speed", 245)
 
 -- Função para abrir link do Discord
 local function openDiscord()
@@ -492,9 +407,8 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- SPEED
+-- SPEED (Fixo em 27)
 local speedEnabled = false
-local currentSpeed = 16
 
 local function forceSpeed()
 	if not player.Character then return end
@@ -503,8 +417,8 @@ local function forceSpeed()
 	if not humanoid then return end
 	
 	if speedEnabled then
-		if humanoid.WalkSpeed ~= currentSpeed then
-			humanoid.WalkSpeed = currentSpeed
+		if humanoid.WalkSpeed ~= 27 then
+			humanoid.WalkSpeed = 27
 		end
 	else
 		if humanoid.WalkSpeed ~= 16 then
@@ -516,8 +430,7 @@ end
 spawn(function()
 	while true do
 		task.wait(0.05)
-		speedEnabled = getSpeedToggle()
-		currentSpeed = getSpeedValue()
+		speedEnabled = getSpeed()
 		forceSpeed()
 	end
 end)
