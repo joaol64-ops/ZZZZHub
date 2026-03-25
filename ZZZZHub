@@ -407,44 +407,68 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
--- SPEED (Desativado = 27, Ativado = 50)
+-- SPEED (Desativado = 27, Ativado = 50) - MÉTODO ULTRA AGRESSIVO
 local speedEnabled = false
+local lastAppliedSpeed = 0
 
-local function forceSpeed()
+local function applySpeed()
 	if not player.Character then return end
 	
 	local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
 	if not humanoid then return end
 	
-	if speedEnabled then
-		-- Speed ATIVADO: 50
-		if humanoid.WalkSpeed ~= 50 then
-			humanoid.WalkSpeed = 50
-		end
-	else
-		-- Speed DESATIVADO: 27 (padrão)
-		if humanoid.WalkSpeed ~= 27 then
-			humanoid.WalkSpeed = 27
+	local targetSpeed = speedEnabled and 50 or 27
+	
+	-- Força a velocidade de todas as formas possíveis
+	if humanoid.WalkSpeed ~= targetSpeed then
+		humanoid.WalkSpeed = targetSpeed
+		lastAppliedSpeed = targetSpeed
+	end
+	
+	-- Tenta também no HumanoidRootPart (para jogos que usam física)
+	local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+	if hrp then
+		-- Se estiver andando e a velocidade estiver baixa, força movimento
+		local moveDirection = hrp.CFrame.LookVector
+		if humanoid.MoveDirection.Magnitude > 0 then
+			if hrp.Velocity.Magnitude < targetSpeed - 5 then
+				hrp.Velocity = moveDirection * targetSpeed
+			end
 		end
 	end
 end
 
+-- Loop SUPER agressivo (0.03 segundos)
 spawn(function()
 	while true do
-		task.wait(0.05)
-		speedEnabled = getSpeed()
-		forceSpeed()
+		task.wait(0.03) -- 33 vezes por segundo
+		local newState = getSpeed()
+		if newState ~= speedEnabled then
+			speedEnabled = newState
+			applySpeed()
+		end
+		applySpeed() -- Sempre aplica
 	end
 end)
 
+-- Monitora quando o personagem renasce
 player.CharacterAdded:Connect(function(character)
-	task.wait(0.2)
-	forceSpeed()
+	task.wait(0.1)
+	applySpeed()
 	
 	local humanoid = character:WaitForChild("Humanoid", 5)
 	if humanoid then
+		-- Monitora qualquer mudança na velocidade
 		humanoid:GetPropertyChangedSignal("WalkSpeed"):Connect(function()
-			forceSpeed()
+			applySpeed()
+		end)
+		
+		-- Força a velocidade constantemente
+		spawn(function()
+			while humanoid and humanoid.Parent do
+				task.wait(0.1)
+				applySpeed()
+			end
 		end)
 	end
 end)
@@ -474,7 +498,6 @@ RunService.RenderStepped:Connect(function()
 end)
 
 -- SUPER JUMP
-local superJumpActive = false
 local lastJumpTime = 0
 
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
